@@ -1,53 +1,65 @@
 package encryptionscheme;
 /**
- * This class represents the RC4 encryption algorithm. Obtained from a online library.
+ * This class represents the RC4 encryption algorithm.
  * @author Jabo Johnigan
  * @version 4/29/17
  * 
  */
 public class RC4 {
-    private int[] S = new int[256];
-    private int[] T = new int[256];
-    private int keylen;
+        private int keylength;
+        private int datalength;
 
-    public RC4(byte[] key) throws Exception {
-        if (key.length < 1 || key.length > 256) {
-            throw new Exception("key must be between 1 and 256 bytes");
-        } else {
-            keylen = key.length;
-            for (int i = 0; i < 256; i++) {
-                S[i] = i;
-                T[i] = key[i % keylen];
-            }
-            int j = 0;
-            for (int i = 0; i < 256; i++) {
-                j = (j + S[i] + T[i]) % 256;
-                S[i] ^= S[j];
-                S[j] ^= S[i];
-                S[i] ^= S[j];
-            }
+    /**
+     * Set up the key length and data length array then call the rc4_encrytion message
+     * @param key to be generated
+     * @param data the message from the file
+     * @throws Exception throws an input exception
+     */
+    public RC4(final byte[] key,final byte[] data) throws Exception {
+        keylength = key.length;
+        datalength = data.length;
+        rc4_encrypt(key, data);
+    }
+
+    /**
+     * Encrypt the data/message
+     * @param key key for the encryption
+     * @param data the data of the incoming file.
+     */
+    private void rc4_encrypt(final byte[] key,final byte[] data){
+
+        int i;
+        int j;
+
+        // key scheduling
+        byte[] sbox = new byte[256];
+        for (i = 0; i < 256; i++) {
+            sbox[i] = (byte) i;
+        }
+        j = 0;
+        for (i = 0; i < 256; i++) {
+            j = ((j + sbox[i] + key[i % keylength]) % 256) & 0xFF;
+            byte tmp = sbox[i];
+            sbox[i] = sbox[j];
+            sbox[j] = tmp;
+        }
+
+        // generate output
+        i = 0;
+        j = 0;
+        int index = 0;
+        while (index < datalength) {
+            i = ((i + 1) % 256) & 0xFF;
+            j = ((j + sbox[i]) % 256) & 0xFF;
+
+            byte tmp = sbox[i];
+            sbox[i] = sbox[j];
+            sbox[j] = tmp;
+
+            byte k = (sbox[((sbox[i] + sbox[j]) % 256) & 0xFF]);
+            data[index] ^= k;
+
+            index++;
         }
     }
-
-    public int[] encrypt(int[] plaintext) {
-        int[] ciphertext = new int[plaintext.length];
-        int i = 0, j = 0, k, t;
-        for (int counter = 0; counter < plaintext.length; counter++) {
-            i = (i + 1) % 256;
-            j = (j + S[i]) % 256;
-            S[i] ^= S[j];
-            S[j] ^= S[i];
-            S[i] ^= S[j];
-            t = (S[i] + S[j]) % 256;
-            k = S[t];
-            ciphertext[counter] = plaintext[counter] ^ k;
-        }
-        return ciphertext;
-    }
-
-    public int[] decrypt(int[] ciphertext) {
-        return encrypt(ciphertext);
-    }
-
-
 }
